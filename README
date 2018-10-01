@@ -1,0 +1,210 @@
+CD-HIT-FP
+
+
+1.  Usage
+2.  Fingerprint file
+2.1 How to generate the Unity fingerprint file from a .sdf file
+2.2 How to translate your fingerprint format to generic format
+
+1. Usage
+==============================================================
+
+I included two fingerprint files here, test_nci_generic.fp and 
+test_nci_unity.fp. There are in generic and unity format (see later parts).
+You can test cd-hit-fp on them.
+
+Usage of the program
+
+./cd-hit-fp [Options]
+Options
+        -i input fingerprint file, required
+
+        -o output clstr file, required
+           program will write a .clstr file listing all the clusters.
+
+        -t type of input fingerprint, default generic
+           can also be unity
+           I can add other types of fingerprints, such as MDL, Daylight etc.
+           But, I don't have access to these programs, 
+           if somebody can send me example files of these fingerprints,
+           I can easily implement it.
+
+        -n length of a fingerprint, default 988, for unity fingerprint
+
+        -f 1 or 0, default 0,
+           if set to 1, it writes out fp file for repsentatives
+
+        -c clustering threshold (Tanimoto coefficient), default 0.8
+
+        -l 1 or 0, default 1, 
+           choose fingerprints with most bit "1" first as representative
+           if set to 0, then choose fingerprints with most bit "0" first
+
+        -m, maxium number of input compounds
+            it should be >= real number of input compounds
+
+        -s, No. segment, default 0,
+            if set to a positive number (2,3,4), it may increase the speed
+            it depends on your input, you may need to try which is best
+
+        -h, print this help
+
+
+for example
+	cd-hit-fp -i pubchem.fp -o pubchem90.fp -c 0.90 -s 3 -m 6000000
+        cd-hit-fp -i nci.fp -o nci80.fp -c 0.8 -m 300000
+        cd-hit-fp -i nci_unity.fp -o nci80.fp -t unity -n 988 -c 0.8 -m 300000
+
+
+The output of .clstr file looks like
+
+>Clstr 0 1                               
+0	pubchem_164402	557	*
+>Clstr 1 2
+0	pubchem_644247	551	99%
+1	pubchem_644248	551	*
+>Clstr 2 5
+0	pubchem_132396	531	99%
+1	pubchem_132397	532	*
+2	pubchem_3036070	530	97%
+3	pubchem_3082742	530	98%
+4	pubchem_3082743	531	98%
+>Clstr 3 1
+0	pubchem_192328	532	*
+>Clstr 4 3
+0	pubchem_153254	491	92%
+1	pubchem_153255	503	92%
+2	pubchem_153263	531	*
+>Clstr 5 3
+0	pubchem_3365351	525	98%
+1	pubchem_3933583	527	98%
+2	pubchem_4313947	530	*
+
+* Here letter ">" starts a new cluster, cluster number and number of compounds 
+  in it are printed in this line
+* Then a list of compounds are printed
+  Four fields are seperated by "TAB".
+  field #1, a sequential number
+  field #2, id of the compound
+  field #3, number of bit "1" in this fingerprint
+  field #4, if "*", this compound is the representative of this cluster
+            otherwise, it is the similarity (Tanimoto coefficient) between
+            this compound and the representative
+
+
+
+2. Fingerprint file
+===========================================================================
+This program reads two types of fingerprints files as input: unity and generic.
+I use Unity fingerprint, because I only have access to Unity program.
+The generic is my format composed of only compound ids and HEX fingerprints.
+if somebody can send me examples of other types of fingerprints, 
+I can easily modify the program to read them.
+
+
+2.1 How to generate the Unity fingerprint file from a .sdf file
+===========================================================================
+If you have a compound library in SDF format, and you have Unity programs
+from Tripos Inc. Do the followings:
+
+1) start the script or command that load Unity and Tripos environments, 
+ask your system administrator about the script. Don't start the Tripos 
+or Unity graphic interface. It only need a shell to run some Unity standalone 
+programs.
+
+
+2) import the sdf file into a Unity database, use command such as:
+dbimport -database test.tdb -type maccs test.sdf
+   if you have more than one SDF files, you can import them by more commands
+dbimport -database test.tdb -type maccs test2.sdf
+dbimport -database test.tdb -type maccs test3.sdf
+
+3) compoute fingerprints of compounds of this Unity database
+dbmkscreen -class 2d -database test.tdb
+
+4) export fingerprints from the Unity database into a file
+echo "*" | dbscreeninfo -database test.tdb -query regid -format hex -lineWrap 256 -output test.fp
+
+5) Now, you have test.fp. It is a text file, it should look like
+
+#@ Finger Print File      :../build/t_nci.tdb/standard.2DRULES
+#@ Finger Print Type      :2d
+#@ Finger Print Name      :standard
+#@ File Version           :3.2
+#@ Bytes Per Finger Print :124
+#@ Record Format          :dbscreeninfo
+#@ Format Type            :hex
+#@ End of Header
+
+3 0 NCI0__1	O=C[2]C(=[S=N]CHC(CH=[S=I]CH@2)=O)CH3
+000000080000000080200800000000001000000006020000000240c0040010000200200402010080
+00200001021000800000000000400140000021000080000200000008000800000000008002000000
+008040000005004000000040000030000100004000000000020000040800200000040010000000c0
+00010006
+0.057    0
+
+4 0 NCI0__2	S[1]:C(:N:C[4]:C:@1:CH:CH:CH:CH:@4)SSC[16]:S:C[18]:C(:N:@16):CH:
+CH:CH:CH:@18
+00000000004000200000808880808800800800022020010080800204010001002801004002983001
+00202000001800000a8840020018a00000000cc028100001002810004020d0104284809060000002
+108004001800064818a0402811004408083000000408a2011100002c01200600040002080080c300
+808de107
+0.133    0
+
+here, NCI0__1 is the id of this compound and the long string next line
+is the fingerprint in "hex" format.
+
+
+2.2 How to translate your fingerprint format to generic format
+===========================================================================
+The generic is my format composed of only compound ids and HEX fingerprints.
+I have a perl script, which can translate unity fingerprint into generic 
+fingerprint. This script is called as "fp_unity2generic.pl". 
+You can run it as
+
+./fp_unity2generic.pl < test_unity.fp > test_generic.fp
+
+A generic fingerprint looks like 
+NCI0__1	000000080000000080200800000000001000000006020000000240c00400100002002004
+02010080002000010210008000000000004001400000210000800002000000080008000000000080
+02000000008040000005004000000040000030000100004000000000020000040800200000040010
+000000c000010006
+NCI0__2	000000000040002000008088808088008008000220200100808002040100010028010040
+0298300100202000001800000a8840020018a00000000cc028100001002810004020d01042848090
+60000002108004001800064818a0402811004408083000000408a2011100002c0120060004000208
+0080c300808de107
+
+Here, each line just contains two fields, 
+id and fingerprint seperated by "TAB"
+
+
+It will be very easy to translate your fingerprint file into the generic format
+with a simple script. I believe most people with some programing background
+can do it. 
+
+if your binary fingerprint looks like
+1001010100101010101000001111101010101000010001001...
+
+then, you need to convert every 4 bit into a hex letter, in lower cases.
+0000 => 0
+0001 => 1
+0010 => 2
+0011 => 3
+0100 => 4
+0101 => 5
+0110 => 6
+0111 => 7
+1000 => 8
+1001 => 9
+1010 => a
+1011 => b
+1100 => c
+1101 => d
+1110 => e
+1111 => f
+
+
+
+
+
+
