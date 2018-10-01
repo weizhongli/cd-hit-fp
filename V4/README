@@ -1,0 +1,33 @@
+V4 (being developed, I totally forgot the status of this version, seem works)
+
+* support openbabel fingerprints
+* support pubchem SDF file
+* openmp
+
+#### FP type & info from openbabel
+PATH_to_openbabel/bin/babel -L fingerprints
+FP2    Indexes linear fragments up to 7 atoms.
+FP3    SMARTS patterns specified in the file patterns.txt
+FP4    SMARTS patterns specified in the file SMARTS_InteLigand.txt
+MACCS    SMARTS patterns specified in the file MACCS.txt
+
+#### Convert SDF to FP2
+obabel -isdf example.sdf -ofpt -xh -O example.FP2
+
+
+#### Convert openbabel FP2 to generic fp
+openbabel_2_generic.pl < example.FP2 > example.fp
+
+#### run cd-hit-fp
+./cd-hit-fp -i example.FP2 -o example.nr70   -c 0.7 -m 32000000 -n 1024 -f 1 -T 8 -t openbabel
+./cd-hit-fp -i example.fp  -o example.nr70a  -c 0.7 -m 32000000 -n 1024 -f 1 -T 8
+
+#### work with pubchem SDF
+use pubchem_SDF2FP.pl to extract fp from one or more sdf files (or gzipped files)
+example:
+./pubchem_SDF2FP.pl example.sdf > example.fp
+./pubchem_SDF2FP.pl example.sdf.gz > example.fp
+./pubchem_SDF2FP.pl *example.sdf > example.fp
+./pubchem_SDF2FP.pl *example.sdf.gz > example.fp
+
+
